@@ -5,4 +5,4 @@ Minimal toolkit to build a *virtual* BEVL surface from historical paths with:
 2) Realized-vol similarity weights
 3) KL-implied historical weights (weighted Monte Carlo)
 
-Bring your own `date,close` CSV (no internet). See `examples/run_example.py`.
+
