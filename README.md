@@ -21,13 +21,11 @@ This provides a “virtual volatility surface” that serves as a fair benchmark
 ## Methodology
 
 ### 1. Continuous Definition
-BEVL $\sigma_{BE}$ solves:
-$$
-\mathbb{E}\!\left[
-\int_0^T e^{-rt}\,S_t^2\,\Gamma_{\text{BS}}(t,S_t;\sigma_{BE})\,(\sigma_t^2-\sigma_{BE}^2)\,dt
-\right]=0,
-$$
-where $\Gamma_{\text{BS}}$ is the Black–Scholes Gamma under constant vol assumption, and $\sigma_t^2$ is realized variance.
+Break-even volatility $\sigma_{BE}$ is defined as the volatility under which the expected P&L of a delta-hedged option equals zero:
+
+```math
+E \left[ \int_0^T e^{-rt} \, S_t^2 \, \Gamma_{BS}(t, S_t; \sigma_{BE}) \, (\sigma_t^2 - \sigma_{BE}^2) \, dt \right] = 0
+
 
 ---
 
