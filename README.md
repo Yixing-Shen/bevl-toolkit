@@ -1,108 +1,73 @@
-# Methodology: Break-Even Volatility (BEVL)
-
-## 1. Concept
-
-Break-Even Volatility (BEVL) is defined as the volatility that makes the **expected P&L of a delta-hedged option equal to zero**.  
-
-For a European option priced under Black–Scholes dynamics with volatility parameter \(\sigma\), if we delta-hedge along a realized path \(\{S_t\}\), the discrete hedging error is:
-
-\[
-d\Pi_t = \frac{1}{2} \, \Gamma^{BS}(t, S_t; \sigma) \, S_t^2 \, \big( \sigma_t^2 - \sigma^2 \big) \, dt
-\]
-
-where:
-- \(\Gamma^{BS}(t, S_t; \sigma)\): Black–Scholes Gamma under volatility \(\sigma\)  
-- \(\sigma_t^2\): realized instantaneous variance along the path  
-
-BEVL \(\sigma_{BE}\) is the volatility such that:
-
-\[
-\mathbb{E}\!\left[ \int_0^T e^{-rt} \, S_t^2 \, \Gamma^{BS}(t, S_t; \sigma_{BE}) \, \big(\sigma_t^2 - \sigma_{BE}^2\big) dt \right] = 0
-\]
-
----
-
 ## 2. Discretization
 
-Given \(N\) simulated or historical paths (indexed by \(n\)) and discrete time steps (indexed by \(k\)):
+Given \(N\) simulated or historical paths (indexed by \(n\)) and \(K\) time steps (indexed by \(k\)):
 
-\[
-\sum_{n=1}^N p_n \sum_{k=1}^K e^{-rt_k} \, S_{n,k}^2 \, \Gamma^{BS}(t_k, S_{n,k}; \sigma) \, \Delta t_k \, \big( \sigma_{n,k}^2 - \sigma^2 \big) = 0
-\]
+$$
+\sum_{n=1}^N p_n \sum_{k=1}^K e^{-r t_k}\,
+S_{n,k}^2\,\Gamma_{\mathrm{BS}}\!\big(t_k, S_{n,k}; \sigma\big)\,\Delta t_k\,
+\big(\sigma_{n,k}^2 - \sigma^2\big)=0 .
+$$
 
-- \(S_{n,k}\): underlying price at step \(k\) on path \(n\)  
-- \(\sigma_{n,k}^2 = \frac{(\ln S_{n,k+1} - \ln S_{n,k})^2}{\Delta t_k}\): realized variance estimate  
+where  
+- \(S_{n,k}\): price on path \(n\) at step \(k\)  
+- \( \displaystyle \sigma_{n,k}^2 \approx \frac{\big(\ln S_{n,k+1}-\ln S_{n,k}\big)^2}{\Delta t_k}\) (set \(r_{n,k}=\ln(S_{n,k+1}/S_{n,k})\) so \(\sigma_{n,k}^2 \approx r_{n,k}^2/\Delta t_k\))  
 - \(p_n\): weight of path \(n\)  
-- \(K\): number of time steps in the tenor  
+- \(K\): number of time steps in the tenor
 
 ---
 
 ## 3. Path Weights
 
 ### (a) Equal Weights
-\[
-p_n = \frac{1}{N}
-\]
+$$
+p_n=\frac{1}{N}.
+$$
 
 ### (b) Realized-Vol Similarity Weights
-Compare realized vol of each path to market-implied vol (or target vol) with a Gaussian kernel:
+Compare each path’s realized volatility \(\hat\sigma_n\) to a reference \(\sigma_{\text{ref}}\) (e.g., recent 3M vol) with a Gaussian kernel, then normalize:
+$$
+\tilde w_n=\exp\!\left(-\frac{(\hat\sigma_n-\sigma_{\text{ref}})^2}{2h^2}\right),\qquad
+p_n=\frac{\tilde w_n}{\sum_{j=1}^N \tilde w_j}.
+$$
 
-\[
-p_n \propto \exp\!\left(- \frac{(\hat\sigma_{n} - \sigma_{mkt})^2}{2h^2}\right)
-\]
+*(等价地也可在“方差空间”做：把 \(\hat\sigma\) 全部换成 \(\hat v=\hat\sigma^2\)，\(\sigma_{\text{ref}}\) 换成 \(v_{\text{ref}}\)。)*
 
-### (c) KL-Implied Weights (Weighted Monte Carlo)
-Solve for weights that minimally deviate from a prior distribution \(\hat p\) while matching option market prices:
+### (c) KL-Implied Historical Weights (Weighted Monte Carlo)
 
-\[
-\min_{p} \; D_{KL}(p||\hat p) = \sum_{n=1}^N p_n \log \frac{p_n}{\hat p_n}
-\]
-
-subject to:
-- \(\sum_{n=1}^N p_n = 1, \quad p_n \ge 0\)  
-- \(\sum_{n=1}^N g_{m,n} p_n = 0 \quad \text{for all instruments } m\)
-
-where \(g_{m,n}\) is the delta-hedged P&L of instrument \(m\) on path \(n\).
-
----
-
-## 4. Numerical Solution
-
-Define the function:
-
-\[
-f(\sigma) = \sum_{n=1}^N p_n \sum_{k=1}^K e^{-rt_k} \, S_{n,k}^2 \, \Gamma^{BS}(t_k, S_{n,k}; \sigma) \, \Delta t_k \, \big( \sigma_{n,k}^2 - \sigma^2 \big)
-\]
-
-We seek \(\sigma_{BE}\) such that:
-
-\[
-f(\sigma_{BE}) = 0
-\]
-
-- **Root-finding**: Brent’s method is used for stability and robustness.  
-- **Initialization**: Start with a bracket around realized volatility and market implied volatility.
+Minimize KL divergence to a prior \(\hat p\) while enforcing market constraints:
+$$
+\min_{p\in\Delta_N}\;\sum_{n=1}^N p_n\log\frac{p_n}{\hat p_n}
+\quad\text{s.t.}\quad
+\sum_{n=1}^N g_{m,n}\,p_n=0\;\;(m=1,\dots,M),
+$$
+where \(g_{m,n}\) is delta-hedged P\&L of instrument \(m\) on path \(n\) computed with market IVs.
+This yields the exponential-tilting form
+$$
+p_n^\star(\lambda)=
+\frac{\hat p_n\,\exp\!\big(-\lambda^\top g_n\big)}
+{\sum_{j=1}^N \hat p_j\,\exp\!\big(-\lambda^\top g_j\big)},
+\qquad g_n=(g_{1,n},\dots,g_{M,n})^\top .
+$$
 
 ---
 
-## 5. Interpretation
+## 4. Dollar Gamma under Black–Scholes
 
-- BEVL is a **Gamma-weighted realized variance**, adjusted for path weights.  
-- The choice of weights determines the “forward-looking” bias:  
-  - Equal → purely historical  
-  - Similarity → conditioned on past similarity to current regime  
-  - KL-implied → fully aligned with option market prices  
-
----
-
-## 6. Applications
-
-- Construct “virtual” volatility surfaces in markets with poor liquidity  
-- Compare BEVL surface to implied vol surface → measure volatility risk premium  
-- Use as inputs for exotic option pricing, scenario analysis, and stress testing  
+For \(\tau=T-t\),
+$$
+S^2\Gamma_{\mathrm{BS}}(t,S;\sigma)
+= e^{-q\,\tau}\,\frac{S\,\phi(d_1)}{\sigma\sqrt{\tau}},
+\qquad
+d_1=\frac{\ln(S/K)+(r-q+\tfrac12\sigma^2)\tau}{\sigma\sqrt{\tau}},
+$$
+where \(\phi(\cdot)\) is the standard normal pdf.
 
 ---
 
-## 7. References
-- Dupire, B. (2006). *Functional Itô Calculus and Applications*.  
-- Avellaneda, M., Friedman, C., Holmes, R., & Samperi, D. (2001). *Weighted Monte Carlo: A New Approach to Portfolio Risk Management*.  
+## 5. BEVL Definition (continuous form)
+
+$$
+\mathbb{E}\!\left[\int_0^T e^{-rt}\,S_t^2\,
+\Gamma_{\mathrm{BS}}(t,S_t;\sigma_{BE})\,
+\big(\sigma_t^2-\sigma_{BE}^2\big)\,dt\right]=0.
+$$
