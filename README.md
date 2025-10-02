@@ -50,8 +50,10 @@ where:
 
 - $S_{n,k}$ = price on path $n$ at step $k$  
 - Realized variance estimate:
-  ```math
-\sigma_{n,k}^2 \approx \frac{\big(\ln S_{n,k+1}-\ln S_{n,k}\big)^2}{\Delta t_k}
+```markdown
+```math
+\Delta \ln S_{n,k} := \ln S_{n,k+1}-\ln S_{n,k}, \qquad
+\sigma_{n,k}^2 \approx \frac{(\Delta \ln S_{n,k})^2}{\Delta t_k}.
 
 
 - $p_n$ = weight of path $n$  
