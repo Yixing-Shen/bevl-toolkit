@@ -42,8 +42,9 @@ where:
 With $N$ historical/simulated paths ($n$) and $K$ time steps ($k$):
 
 $$
-\sum_{n=1}^N p_n \sum_{k=1}^K e^{-rt_k} S_{n,k}^2 \, \Gamma_{\text{BS}}(t_k, S_{n,k}; \sigma) \, \Delta t_k \, \big( \sigma_{n,k}^2 - \sigma^2 \big) = 0
+\sigma_{n,k}^2 \approx \frac{\big(\ln S_{n,k+1}-\ln S_{n,k}\big)^2}{\Delta t_k}
 $$
+
 
 where:
 
