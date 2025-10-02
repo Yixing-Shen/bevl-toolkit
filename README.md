@@ -22,9 +22,12 @@ This provides a “virtual volatility surface” that serves as a fair benchmark
 
 ### 1. Continuous Definition
 Break-even volatility $\sigma_{BE}$ is defined as the volatility under which the expected P&L of a delta-hedged option equals zero:
-$$
-\mathbb{E}\left[\int_{0}^{T}e^{-rt}S_t^2\Gamma_{\mathrm{BS}}(t,S_t;\sigma_{BE})(\sigma_t^2-\sigma_{BE}^2)dt\right]=0
-$$
+```math
+\mathbb{E}\!\left[
+\int_{0}^{T} e^{-rt}\, S_t^2\, \Gamma_{\mathrm{BS}}(t,S_t;\sigma_{\mathrm{BE}})
+\big(\sigma_t^2 - \sigma_{\mathrm{BE}}^2\big)\, dt
+\right] = 0.
+```
 
 
 where:
